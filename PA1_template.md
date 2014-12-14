@@ -78,9 +78,7 @@ with(stepsPerInterval,
               main="average number of steps taken per interval"))
 ```
 
-```
-## Error in x(x): argument "end" is missing, with no default
-```
+![plot of chunk unnamed-chunk-6](figure/unnamed-chunk-6-1.png) 
 
 The interval containing maximum number of steps on average is:
 
@@ -89,7 +87,7 @@ with(stepsPerInterval, interval[which.max(avg_steps)])
 ```
 
 ```
-## Error in interval[which.max(avg_steps)]: object of type 'closure' is not subsettable
+## [1] 835
 ```
 
 
