@@ -7,19 +7,100 @@ output:
 
 
 ## Loading and preprocessing the data
+Load the libraries required for study.
+```{r message=FALSE}
 
+library(lubridate)
+library(plyr)
+library(dplyr)
+library(lattice)
+```
+
+Read activity data into a data frame.
+```{r echo=TRUE}
+zip <- "activity.zip"
+file <- "activity.csv"
+rawdata <- read.csv(unz(zip, file),colClasses=c("integer", "POSIXct", "integer"))
+head(rawdata)
+```
 
 
 ## What is mean total number of steps taken per day?
+Missing data are ignored for calculations.
+```{r echo=TRUE}
+stepsPerDay <- tapply(rawdata$steps,rawdata$date,sum, na.rm = TRUE)
+hist(stepsPerDay, main="Histogram of total number of steps taken each day",
+                  xlab="total number of steps taken each day")
+```
 
+Mean number of steps taken each day is:
+```{r echo=TRUE}
+mean(stepsPerDay, na.rm=TRUE)
+```
 
+Median number of steps taken each day is:
+```{r echo=TRUE}
+median(stepsPerDay, na.rm=TRUE)
+```
 
 ## What is the average daily activity pattern?
+```{r echo=TRUE}
+stepsPerInterval <- rawdata %>% 
+                        group_by(interval) %>%
+                        summarise(avg_steps=mean(steps, na.rm=TRUE))
+with(stepsPerInterval, 
+     plot(interval , avg_steps, type="l", 
+              ylab="average number of steps taken",
+              main="average number of steps taken per interval"))
+```
+
+The interval containing maximum number of steps on average is:
+```{r echo=TRUE}
+with(stepsPerInterval, interval[which.max(avg_steps)])
+```
 
 
+## Imputing missing values?
+Number of rows with missing data is:
+```{r echo=TRUE}
+sum(!complete.cases(rawdata))
+```
 
-## Imputing missing values
+Missing data is imputed using median value over that interval. THe imputed result is stored in dataset filledData.
+
+```{r echo=TRUE}
+impute_step = function(data) {
+  medianStepsPerInterval <- tapply(data$steps,data$interval,median, na.rm = TRUE)
+  ifelse(is.na(data$steps), medianStepsPerInterval[as.character(data$interval)], data$steps)
+}
+
+filledData <- data.frame(steps = impute_step(rawdata), date = rawdata$date, interval = rawdata$interval)
+head(filledData)
+```
+
+Total steps taken per day with filled data.
+```{r echo=TRUE}
+processedStepsPerDay <- tapply(filledData$steps,filledData$date,sum, na.rm = TRUE)
+hist(processedStepsPerDay,
+        main="Histogram of total number of steps taken each day for filled data",
+        xlab="total number of steps taken each day")
+```
+
+Mean steps taken per day with filled data is:
+```{r echo=TRUE}
+mean(processedStepsPerDay, na.rm=TRUE)
+```
+
+Median steps taken per day with filled data is:
+```{r echo=TRUE}
+median(processedStepsPerDay, na.rm=TRUE)
+```
 
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+```{r echo=TRUE}
+filledData$day <- factor(ifelse(wday(filledData$date) %in% c(1,7),"weekend", "weekday"))
+x <- ddply(filledData, .(day, interval), summarise, avg_steps=mean(steps))
+xyplot(avg_steps ~ interval | day, type="l", data=x, layout = c(1,2))
+```
